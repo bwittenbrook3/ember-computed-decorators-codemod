@@ -129,7 +129,7 @@ describe('bin acceptance', function () {
               .toEqual(0);
 
             expect(stdout)
-              .toMatch('Done! All uses of the Ember global have been updated.\n');
+              .toMatch('Done! All uses of the ember-computed-decorators have been updated.\n');
 
             expect(fs.readFileSync(tmpFile, 'utf8'))
               .toEqual(fs.readFileSync(outputFile, 'utf8'));

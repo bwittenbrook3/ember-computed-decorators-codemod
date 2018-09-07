@@ -109,7 +109,7 @@ function buildReport() {
       fs.writeFileSync("MODULE_REPORT.md", file);
       console.log(chalk.yellow("\nDone! Some files could not be upgraded automatically. See " + chalk.blue("MODULE_REPORT.md") + "."));
     } else {
-      console.log(chalk.green("\nDone! All uses of the Ember global have been updated."));
+      console.log(chalk.green("\nDone! All uses of the ember-computed-decorators have been updated."));
     }
   });
 }

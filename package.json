@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Codemod to update ember-computed-decorators to ember-decorators",
   "main": "index.js",
+  "bin": "./bin/ember-computed-decorators-codemod.js",
   "scripts": {
     "test": "jest"
   },
@@ -11,7 +12,7 @@
     "url": "git+https://github.com/bwittenbrook3/ember-computed-decorators-codemod.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/bwittenbrook3/ember-computed-decorators-codemod/issues"
   },
