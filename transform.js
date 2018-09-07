@@ -44,12 +44,17 @@ function transform(file, api /*, options*/ ) {
       source: { value: 'ember-computed-decorators' }
     });
 
+    if (!firstComputedDecoratorImport) {
+      firstComputedDecoratorImport = root.find(j.ImportDeclaration, {
+        source: { value: 'ember-computed-decorators/ember-data' }
+      });
+    }
+
     // ember-computed-decorators not used in this file
     if (!firstComputedDecoratorImport) {
       return source
     }
 
-    //
     const computedDecoratorImports = registry.modules
       .filter(mod => mod.source === 'ember-computed-decorators')
       .map(mod => mod.imported);
@@ -58,37 +63,52 @@ function transform(file, api /*, options*/ ) {
       .filter(mod => mod.source === 'ember-computed-decorators/ember-data')
       .map(mod => mod.imported);
 
-    function addNewImport(importsToAdd, source, name) {
+
+    let importsToAdd = {}
+
+    function addNewImport(source, name) {
       if (!importsToAdd[source]) {
         importsToAdd[source] = []
       }
       importsToAdd[source].push(name)
     }
 
-    let importsToAdd = {}
+    const mapping = {
+      'default': {
+        source: '@ember-decorators/object',
+        as: 'computed'
+      },
+      'map': {
+        source: '@ember-decorators/object/computed'
+      },
+      'not': {
+        source: '@ember-decorators/object/computed'
+      },
+      'alias': {
+        source: '@ember-decorators/object/computed'
+      }
+    }
+
     computedDecoratorImports.forEach(imported => {
-      switch (imported) {
-      case 'default':
-        addNewImport(importsToAdd, '@ember-decorators/object', 'computed')
-        break
-      case 'map':
-        addNewImport(importsToAdd, '@ember-decorators/object/computed', 'map')
-        break
-      case 'not':
-        addNewImport(importsToAdd, '@ember-decorators/object/computed', 'not')
-        break
-      default:
-        console.log(imported)
+      let added = false
+      Object.keys(mapping)
+        .forEach(key => {
+          if (key === imported) {
+            const { source, as } = mapping[key]
+            addNewImport(source, as || imported)
+            added = true
+          }
+        })
+
+      if (!added) {
+        throw new Error(`Didn't find mapping for 'ember-computed-decorators' for the import: '${imported}'`)
       }
     })
 
-    computedDataDecoratorImports.forEach(imported => {
-      switch (imported) {
-      case 'attr':
-        addNewImport(importsToAdd, '@ember-decorators/data', 'attr')
-        break
-      }
-    })
+    computedDataDecoratorImports.sort()
+      .forEach(imported => {
+        addNewImport('@ember-decorators/data', imported)
+      })
 
     Object.keys(importsToAdd)
       .sort()
@@ -101,16 +121,15 @@ function transform(file, api /*, options*/ ) {
         firstComputedDecoratorImport.insertBefore(importStatement)
       })
 
+    let sources = [
+      'ember-computed-decorators',
+      'ember-computed-decorators/ember-data'
+    ]
 
-    root.find(j.ImportDeclaration, {
-        source: { value: 'ember-computed-decorators' }
-      })
-      .remove()
-
-    root.find(j.ImportDeclaration, {
-        source: { value: 'ember-computed-decorators/ember-data' }
-      })
-      .remove()
+    sources.forEach(v => {
+      root.find(j.ImportDeclaration, { source: { value: v } })
+        .remove()
+    })
 
     // jscodeshift is not so great about giving us control over the resulting whitespace.
     // We'll use a regular expression to try to improve the situation (courtesy of @rwjblue).
@@ -136,41 +155,6 @@ function transform(file, api /*, options*/ ) {
   }
 
   return source;
-
-  // function createImportStatement(source, imported, local) {
-  //   let declaration, variable, idIdentifier, nameIdentifier;
-  //   // console.log('variableName', variableName);
-  //   // console.log('moduleName', moduleName);
-  //
-  //   // if no variable name, return `import 'jquery'`
-  //   if (!local) {
-  //     declaration = j.importDeclaration([], j.literal(source));
-  //     return declaration;
-  //   }
-  //
-  //   // multiple variable names indicates a destructured import
-  //   if (Array.isArray(local)) {
-  //     let variableIds = local.map(function (v) {
-  //       return j.importSpecifier(j.identifier(v), j.identifier(v));
-  //     });
-  //
-  //     declaration = j.importDeclaration(variableIds, j.literal(source));
-  //   } else {
-  //     // else returns `import $ from 'jquery'`
-  //     nameIdentifier = j.identifier(local); //import var name
-  //     variable = j.importDefaultSpecifier(nameIdentifier);
-  //
-  //     // if propName, use destructuring `import {pluck} from 'underscore'`
-  //     if (imported && imported !== "default") {
-  //       idIdentifier = j.identifier(imported);
-  //       variable = j.importSpecifier(idIdentifier, nameIdentifier); // if both are same, one is dropped...
-  //     }
-  //
-  //     declaration = j.importDeclaration([variable], j.literal(source));
-  //   }
-  //
-  //   return declaration;
-  // }
 
   function findExistingModules(root) {
     let registry = new ModuleRegistry();
@@ -228,10 +212,7 @@ function transform(file, api /*, options*/ ) {
       }
     });
   }
-
 }
-
-
 
 class ModuleRegistry {
   constructor() {
