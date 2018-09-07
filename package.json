@@ -1,0 +1,28 @@
+{
+  "name": "ember-computed-decorators-codemod",
+  "version": "1.0.0",
+  "description": "Codemod to update ember-computed-decorators to ember-decorators",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bwittenbrook3/ember-computed-decorators-codemod.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bwittenbrook3/ember-computed-decorators-codemod/issues"
+  },
+  "homepage": "https://github.com/bwittenbrook3/ember-computed-decorators-codemod#readme",
+  "dependencies": {
+    "babel-plugin-transform-decorators-legacy": "^1.3.5",
+    "jscodeshift": "^0.3.29"
+  },
+  "devDependencies": {
+    "fs-extra": "^7.0.0",
+    "jest": "^23.5.0",
+    "tmp": "^0.0.33"
+  }
+}
