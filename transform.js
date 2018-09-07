@@ -40,6 +40,8 @@ function transform(file, api /*, options*/ ) {
     // exports and named exports into one line if necessary.
     let modules = findExistingModules(root);
 
+    updateImportDeclarations(root, modules);
+
     // jscodeshift is not so great about giving us control over the resulting whitespace.
     // We'll use a regular expression to try to improve the situation (courtesy of @rwjblue).
     source = beautifyImports(root.toSource(Object.assign({}, OPTS, {
@@ -64,6 +66,61 @@ function transform(file, api /*, options*/ ) {
   }
 
   return source;
+
+  function updateImportDeclarations(root, registry) {
+    let body = root.get()
+      .value.program.body;
+
+    registry.modules.forEach(mod => {
+      if (mod.source === 'ember-computed-decorators') {
+
+        let oldDeclaration = root.find(j.ImportDeclaration, {
+          source: { value: mod.source }
+        });
+
+        let importStatement = createImportStatement(
+          '@ember-decorators/object', 'computed', 'computed'
+        )
+        oldDeclaration.insertBefore(importStatement)
+        oldDeclaration.remove()
+      }
+    });
+  }
+
+  function createImportStatement(source, imported, local) {
+    let declaration, variable, idIdentifier, nameIdentifier;
+    // console.log('variableName', variableName);
+    // console.log('moduleName', moduleName);
+
+    // if no variable name, return `import 'jquery'`
+    if (!local) {
+      declaration = j.importDeclaration([], j.literal(source));
+      return declaration;
+    }
+
+    // multiple variable names indicates a destructured import
+    if (Array.isArray(local)) {
+      let variableIds = local.map(function (v) {
+        return j.importSpecifier(j.identifier(v), j.identifier(v));
+      });
+
+      declaration = j.importDeclaration(variableIds, j.literal(source));
+    } else {
+      // else returns `import $ from 'jquery'`
+      nameIdentifier = j.identifier(local); //import var name
+      variable = j.importDefaultSpecifier(nameIdentifier);
+
+      // if propName, use destructuring `import {pluck} from 'underscore'`
+      if (imported && imported !== "default") {
+        idIdentifier = j.identifier(imported);
+        variable = j.importSpecifier(idIdentifier, nameIdentifier); // if both are same, one is dropped...
+      }
+
+      declaration = j.importDeclaration([variable], j.literal(source));
+    }
+
+    return declaration;
+  }
 
   function findExistingModules(root) {
     let registry = new ModuleRegistry();

@@ -7,6 +7,6 @@ export default Component.extend({
 
   @computed('firstName', 'lastName')
   fullName(firstName, lastName) {
-    firstName
+    return `${firstName} + ${lastName}`
   }
 })
