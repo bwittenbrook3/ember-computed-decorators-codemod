@@ -38,9 +38,79 @@ function transform(file, api /*, options*/ ) {
     // won't import them again. We also try to be smart about not adding multiple
     // import statements to import from the same module, condensing default
     // exports and named exports into one line if necessary.
-    let modules = findExistingModules(root);
+    let registry = findExistingModules(root);
 
-    updateImportDeclarations(root, modules);
+    let firstComputedDecoratorImport = root.find(j.ImportDeclaration, {
+      source: { value: 'ember-computed-decorators' }
+    });
+
+    // ember-computed-decorators not used in this file
+    if (!firstComputedDecoratorImport) {
+      return source
+    }
+
+    //
+    const computedDecoratorImports = registry.modules
+      .filter(mod => mod.source === 'ember-computed-decorators')
+      .map(mod => mod.imported);
+
+    const computedDataDecoratorImports = registry.modules
+      .filter(mod => mod.source === 'ember-computed-decorators/ember-data')
+      .map(mod => mod.imported);
+
+    function addNewImport(importsToAdd, source, name) {
+      if (!importsToAdd[source]) {
+        importsToAdd[source] = []
+      }
+      importsToAdd[source].push(name)
+    }
+
+    let importsToAdd = {}
+    computedDecoratorImports.forEach(imported => {
+      switch (imported) {
+      case 'default':
+        addNewImport(importsToAdd, '@ember-decorators/object', 'computed')
+        break
+      case 'map':
+        addNewImport(importsToAdd, '@ember-decorators/object/computed', 'map')
+        break
+      case 'not':
+        addNewImport(importsToAdd, '@ember-decorators/object/computed', 'not')
+        break
+      default:
+        console.log(imported)
+      }
+    })
+
+    computedDataDecoratorImports.forEach(imported => {
+      switch (imported) {
+      case 'attr':
+        addNewImport(importsToAdd, '@ember-decorators/data', 'attr')
+        break
+      }
+    })
+
+    Object.keys(importsToAdd)
+      .sort()
+      .forEach(source => {
+        const local = importsToAdd[source]
+        const imported = local.map(v =>
+          j.importSpecifier(j.identifier(v), j.identifier(v))
+        )
+        const importStatement = j.importDeclaration(imported, j.literal(source))
+        firstComputedDecoratorImport.insertBefore(importStatement)
+      })
+
+
+    root.find(j.ImportDeclaration, {
+        source: { value: 'ember-computed-decorators' }
+      })
+      .remove()
+
+    root.find(j.ImportDeclaration, {
+        source: { value: 'ember-computed-decorators/ember-data' }
+      })
+      .remove()
 
     // jscodeshift is not so great about giving us control over the resulting whitespace.
     // We'll use a regular expression to try to improve the situation (courtesy of @rwjblue).
@@ -67,60 +137,40 @@ function transform(file, api /*, options*/ ) {
 
   return source;
 
-  function updateImportDeclarations(root, registry) {
-    let body = root.get()
-      .value.program.body;
-
-    registry.modules.forEach(mod => {
-      if (mod.source === 'ember-computed-decorators') {
-
-        let oldDeclaration = root.find(j.ImportDeclaration, {
-          source: { value: mod.source }
-        });
-
-        let importStatement = createImportStatement(
-          '@ember-decorators/object', 'computed', 'computed'
-        )
-        oldDeclaration.insertBefore(importStatement)
-        oldDeclaration.remove()
-      }
-    });
-  }
-
-  function createImportStatement(source, imported, local) {
-    let declaration, variable, idIdentifier, nameIdentifier;
-    // console.log('variableName', variableName);
-    // console.log('moduleName', moduleName);
-
-    // if no variable name, return `import 'jquery'`
-    if (!local) {
-      declaration = j.importDeclaration([], j.literal(source));
-      return declaration;
-    }
-
-    // multiple variable names indicates a destructured import
-    if (Array.isArray(local)) {
-      let variableIds = local.map(function (v) {
-        return j.importSpecifier(j.identifier(v), j.identifier(v));
-      });
-
-      declaration = j.importDeclaration(variableIds, j.literal(source));
-    } else {
-      // else returns `import $ from 'jquery'`
-      nameIdentifier = j.identifier(local); //import var name
-      variable = j.importDefaultSpecifier(nameIdentifier);
-
-      // if propName, use destructuring `import {pluck} from 'underscore'`
-      if (imported && imported !== "default") {
-        idIdentifier = j.identifier(imported);
-        variable = j.importSpecifier(idIdentifier, nameIdentifier); // if both are same, one is dropped...
-      }
-
-      declaration = j.importDeclaration([variable], j.literal(source));
-    }
-
-    return declaration;
-  }
+  // function createImportStatement(source, imported, local) {
+  //   let declaration, variable, idIdentifier, nameIdentifier;
+  //   // console.log('variableName', variableName);
+  //   // console.log('moduleName', moduleName);
+  //
+  //   // if no variable name, return `import 'jquery'`
+  //   if (!local) {
+  //     declaration = j.importDeclaration([], j.literal(source));
+  //     return declaration;
+  //   }
+  //
+  //   // multiple variable names indicates a destructured import
+  //   if (Array.isArray(local)) {
+  //     let variableIds = local.map(function (v) {
+  //       return j.importSpecifier(j.identifier(v), j.identifier(v));
+  //     });
+  //
+  //     declaration = j.importDeclaration(variableIds, j.literal(source));
+  //   } else {
+  //     // else returns `import $ from 'jquery'`
+  //     nameIdentifier = j.identifier(local); //import var name
+  //     variable = j.importDefaultSpecifier(nameIdentifier);
+  //
+  //     // if propName, use destructuring `import {pluck} from 'underscore'`
+  //     if (imported && imported !== "default") {
+  //       idIdentifier = j.identifier(imported);
+  //       variable = j.importSpecifier(idIdentifier, nameIdentifier); // if both are same, one is dropped...
+  //     }
+  //
+  //     declaration = j.importDeclaration([variable], j.literal(source));
+  //   }
+  //
+  //   return declaration;
+  // }
 
   function findExistingModules(root) {
     let registry = new ModuleRegistry();
