@@ -13,6 +13,11 @@
   },
   "author": "",
   "license": "MIT",
+  "keywords": [
+    "ember-computed-decorators",
+    "ember-decorators",
+    "codemod",
+  ],
   "bugs": {
     "url": "https://github.com/bwittenbrook3/ember-computed-decorators-codemod/issues"
   },
