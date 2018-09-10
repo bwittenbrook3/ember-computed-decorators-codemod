@@ -73,35 +73,12 @@ function transform(file, api /*, options*/ ) {
       importsToAdd[source].push(name)
     }
 
-    const mapping = {
-      'default': {
-        source: '@ember-decorators/object',
-        as: 'computed'
-      },
-      'map': {
-        source: '@ember-decorators/object/computed'
-      },
-      'not': {
-        source: '@ember-decorators/object/computed'
-      },
-      'alias': {
-        source: '@ember-decorators/object/computed'
-      }
-    }
-
     computedDecoratorImports.forEach(imported => {
       let added = false
-      Object.keys(mapping)
-        .forEach(key => {
-          if (key === imported) {
-            const { source, as } = mapping[key]
-            addNewImport(source, as || imported)
-            added = true
-          }
-        })
-
-      if (!added) {
-        throw new Error(`Didn't find mapping for 'ember-computed-decorators' for the import: '${imported}'`)
+      if (imported === 'default') {
+        addNewImport('@ember-decorators/object', 'computed')
+      } else {
+        addNewImport('@ember-decorators/object/computed', imported)
       }
     })
 

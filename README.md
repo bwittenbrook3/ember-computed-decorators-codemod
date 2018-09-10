@@ -54,6 +54,8 @@ cd my-ember-app
 ember-computed-decorators-codemod
 ```
 
+https://github.com/ember-decorators/auto-computed
+
 ### Running Tests
 
 ```sh
