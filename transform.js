@@ -44,14 +44,14 @@ function transform(file, api /*, options*/ ) {
       source: { value: 'ember-computed-decorators' }
     });
 
-    if (!firstComputedDecoratorImport) {
+    if (firstComputedDecoratorImport.__paths.length == 0) {
       firstComputedDecoratorImport = root.find(j.ImportDeclaration, {
         source: { value: 'ember-computed-decorators/ember-data' }
       });
     }
 
     // ember-computed-decorators not used in this file
-    if (!firstComputedDecoratorImport) {
+    if (firstComputedDecoratorImport.__paths.length == 0) {
       return source
     }
 
