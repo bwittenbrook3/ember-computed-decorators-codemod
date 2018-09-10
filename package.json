@@ -1,6 +1,6 @@
 {
   "name": "ember-computed-decorators-codemod",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Codemod to update ember-computed-decorators to ember-decorators",
   "main": "index.js",
   "bin": "./bin/ember-computed-decorators-codemod.js",
